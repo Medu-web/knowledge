@@ -1,5 +1,5 @@
 name: Generate Index
-on: [push, workflow_dispatch] # 手動実行ボタンも追加
+on: [push, workflow_dispatch]
 permissions:
   contents: write
 jobs:
@@ -10,12 +10,14 @@ jobs:
       - name: Generate Index HTML
         run: |
           echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>教材目次</title></head><body>" > index.html
-          echo "<h1>教材資料インデックス</h1><ul>" >> index.html
+          echo "<h1>教材資料インデックス</h1><p>更新日: $(date +'%Y-%m-%d %H:%M')</p><ul>" >> index.html
           
-          # 全フォルダを再帰的に探し、PDFをリスト化
-          # ファイル名に特殊文字があっても壊れないように処理
-          find . -name "*.pdf" -not -path '*/.*' | sort | while read -r line; do
+          # 拡張子の .pdf と .PDF 両方を全階層から探す設定
+          find . -iname "*.pdf" -not -path '*/.*' | sort | while read -r line; do
+            # パスの整形
             path=$(echo "$line" | sed 's|^\./||')
+            # ファイル名だけを表示用に抽出
+            filename=$(basename "$path")
             echo "<li><a href=\"$path\">$path</a></li>" >> index.html
           done
           
@@ -25,5 +27,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add index.html
-          git commit -m "目次を再生成しました" || exit 0
+          git commit -m "目次を完全再生成" || exit 0
           git push
