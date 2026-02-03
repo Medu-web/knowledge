@@ -1,23 +1,29 @@
 name: Generate Index
-on: [push] # ファイルがアップされたら自動起動
-
+on: [push, workflow_dispatch] # 手動実行ボタンも追加
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Generate Index HTML
         run: |
-          echo "<html><body><h1>教材インデックス</h1>" > index.html
-          # フォルダを探してリンクを自動作成
-          find . -maxdepth 2 -name "*.pdf" | sed 's|^\./||' | while read line; do
-            echo "<li><a href=\"$line\">$line</a></li>" >> index.html
+          echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>教材目次</title></head><body>" > index.html
+          echo "<h1>教材資料インデックス</h1><ul>" >> index.html
+          
+          # 全フォルダを再帰的に探し、PDFをリスト化
+          # ファイル名に特殊文字があっても壊れないように処理
+          find . -name "*.pdf" -not -path '*/.*' | sort | while read -r line; do
+            path=$(echo "$line" | sed 's|^\./||')
+            echo "<li><a href=\"$path\">$path</a></li>" >> index.html
           done
-          echo "</body></html>" >> index.html
+          
+          echo "</ul></body></html>" >> index.html
       - name: Commit index
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add index.html
-          git commit -m "Update index.html" || exit 0
+          git commit -m "目次を再生成しました" || exit 0
           git push
