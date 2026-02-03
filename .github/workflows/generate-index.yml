@@ -1,0 +1,23 @@
+name: Generate Index
+on: [push] # ファイルがアップされたら自動起動
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate Index HTML
+        run: |
+          echo "<html><body><h1>教材インデックス</h1>" > index.html
+          # フォルダを探してリンクを自動作成
+          find . -maxdepth 2 -name "*.pdf" | sed 's|^\./||' | while read line; do
+            echo "<li><a href=\"$line\">$line</a></li>" >> index.html
+          done
+          echo "</body></html>" >> index.html
+      - name: Commit index
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add index.html
+          git commit -m "Update index.html" || exit 0
+          git push
